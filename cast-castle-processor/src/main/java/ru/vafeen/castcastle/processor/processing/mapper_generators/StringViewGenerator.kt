@@ -14,10 +14,23 @@ import ru.vafeen.castcastle.processor.processing.utils.isCollectionType
 import java.time.LocalDateTime
 
 internal class StringViewGenerator(private val mappers: List<MapperMethod>) {
-    private var isClassGenerationCalled = false
-    private var counter = 0
+    fun generateImplMapperClass(implMapperClass: ImplMapperClass): String {
+        require(!isClassGenerationCalled) { "${StringViewGenerator::class.simpleName} must be called once for every implementation" }
+        isClassGenerationCalled = true
 
-    private fun getReceiver() = "it${counter++}"
+        return buildString {
+            appendLine("package ${implMapperClass.packageName}\n")
+            appendLine("//updated: ${LocalDateTime.now()}\n")
+            appendLine(copyright())
+            appendLine("${implMapperClass.visibility.nameForFile()} class ${implMapperClass.name} : ${implMapperClass.parentInterfaceName} {")
+            appendLine(
+                implMapperClass.implMethods.joinToString(separator = "\n\n") {
+                    generateImplMethod(it, implMapperClass.isJava)
+                }.addIndent()
+            )
+            appendLine("}")
+        }
+    }
 
     fun generateImplMethod(implMapperMethod: ImplMapperMethod, isJava: Boolean): String =
         buildString {
@@ -45,6 +58,9 @@ internal class StringViewGenerator(private val mappers: List<MapperMethod>) {
             appendLine("}")
         }
 
+    private var isClassGenerationCalled = false
+    private var counter = 0
+    private fun getReceiver() = "it${counter++}"
     private fun recursiveGenerateMapperCall(
         sourceVar: String,
         sourceModel: ClassModel,
@@ -257,24 +273,6 @@ internal class StringViewGenerator(private val mappers: List<MapperMethod>) {
     private fun findMatchingSourceParameter(
         targetParam: Parameter, sourceModel: ClassModel
     ): Parameter? = sourceModel.parameters.find { it.name == targetParam.name }
-
-    fun generateImplMapperClass(implMapperClass: ImplMapperClass): String {
-        require(!isClassGenerationCalled) { "${StringViewGenerator::class.simpleName} must be called once for every implementation" }
-        isClassGenerationCalled = true
-
-        return buildString {
-            appendLine("package ${implMapperClass.packageName}\n")
-            appendLine("//updated: ${LocalDateTime.now()}\n")
-            appendLine(copyright())
-            appendLine("${implMapperClass.visibility.nameForFile()} class ${implMapperClass.name} : ${implMapperClass.parentInterfaceName} {")
-            appendLine(
-                implMapperClass.implMethods.joinToString(separator = "\n\n") {
-                    generateImplMethod(it, implMapperClass.isJava)
-                }.addIndent()
-            )
-            appendLine("}")
-        }
-    }
 
     private fun String.addIndent(): String = this.prependIndent("    ")
 }
