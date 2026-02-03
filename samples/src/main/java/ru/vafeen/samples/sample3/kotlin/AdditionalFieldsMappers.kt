@@ -10,7 +10,7 @@ data class B(val x: Int, val z: Int)
 fun standaloneMapper1(a: A): B = standaloneMapper1CastCastle(a, 1)
 
 @CastCastleMapper
-fun standaloneMapper2(b: B): A = standaloneMapper2CastCastle(b, 1)
+fun B.standaloneMapper2(): A = standaloneMapper2CastCastle(1)
 
 @CastCastleMapper
 class AdditionalFieldsMapper {
