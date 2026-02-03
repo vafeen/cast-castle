@@ -12,7 +12,7 @@ internal fun MapperClass.toImplClassModel(): ImplMapperClass = ImplMapperClass(
     parentInterfaceName = name,
     visibility = visibility,
     implMethods = mappers
-        .filter { it.isAbstract }
+        .filter { it.isAbstract || it.isMapperAnnotated }
         .map {
             ImplMapperMethod(
                 name = it.name,

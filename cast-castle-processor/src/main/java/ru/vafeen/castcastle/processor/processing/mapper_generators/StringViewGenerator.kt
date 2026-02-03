@@ -17,6 +17,7 @@ internal class StringViewGenerator(private val mappers: List<MapperMethod>) {
     fun generateImplMapperClass(implMapperClass: ImplMapperClass): String {
         require(!isClassGenerationCalled) { "${StringViewGenerator::class.simpleName} must be called once for every implementation" }
         isClassGenerationCalled = true
+        _extensionMethods.clear()
 
         return buildString {
             appendLine("package ${implMapperClass.packageName}\n")
@@ -24,15 +25,24 @@ internal class StringViewGenerator(private val mappers: List<MapperMethod>) {
             appendLine(copyright())
             appendLine("${implMapperClass.visibility.nameForFile()} class ${implMapperClass.name} : ${implMapperClass.parentInterfaceName} {")
             appendLine(
-                implMapperClass.implMethods.joinToString(separator = "\n\n") {
-                    generateImplMethod(it, implMapperClass.isJava)
+                implMapperClass.implMethods.joinToString(separator = "\n\n") { method ->
+                    generateImplMethod(
+                        className = implMapperClass.parentInterfaceName,
+                        implMapperMethod = method,
+                        isJava = implMapperClass.isJava
+                    )
                 }.addIndent()
             )
             appendLine("}")
+            _extensionMethods.forEach(::appendLine)
         }
     }
 
-    fun generateImplMethod(implMapperMethod: ImplMapperMethod, isJava: Boolean): String =
+    fun generateImplMethod(
+        className: String,
+        implMapperMethod: ImplMapperMethod,
+        isJava: Boolean
+    ): String =
         buildString {
             val returnTypeName = if (implMapperMethod.to.isCollectionType()) {
                 implMapperMethod.to.fullNameWithGenerics()
@@ -40,38 +50,98 @@ internal class StringViewGenerator(private val mappers: List<MapperMethod>) {
                 implMapperMethod.to.fullName()
             }
 
+            val missingParameters = mutableListOf<Pair<String, String>>()
+            val mappingBody = recursiveGenerateMapperCall(
+                sourceVar = implMapperMethod.from.name,
+                sourceModel = implMapperMethod.from.classModel,
+                targetModel = implMapperMethod.to,
+                missingParameters = emptyMap(),
+                currentMapperMethod = implMapperMethod,
+                isJava = isJava,
+                onMissingParameter = { name, type ->
+                    missingParameters.add(name to type)
+                    null
+                })
             appendLine(
-                "override fun ${implMapperMethod.name}" + "(${implMapperMethod.from.name}: ${implMapperMethod.from.classModel.fullNameWithGenerics()})" + ": $returnTypeName {"
+                "override fun ${implMapperMethod.name}(" + "${implMapperMethod.from.name}: ${implMapperMethod.from.classModel.fullNameWithGenerics()})" + ": $returnTypeName {"
             )
-            appendLine(
-                "return ${
-                    recursiveGenerateMapperCall(
-                        sourceVar = implMapperMethod.from.name,
-                        sourceModel = implMapperMethod.from.classModel,
-                        targetModel = implMapperMethod.to,
-                        visitedTypes = mutableSetOf(),
-                        currentMapperMethod = implMapperMethod,
-                        isJava = isJava
-                    )
-                }".addIndent()
-            )
-            appendLine("}")
+            if (missingParameters.isEmpty()) {
+                // Полный маппинг возможен
+
+                appendLine("return $mappingBody".addIndent())
+                appendLine("}")
+            } else {
+                // Не хватает параметров - генерируем stub
+                val extensionMethod = generateExtensionMethod(
+                    className = className,
+                    implMapperMethod = implMapperMethod,
+                    missingParameters = missingParameters
+                )
+                _extensionMethods.add(extensionMethod)
+                appendLine("// Missing parameters: ${missingParameters.joinToString { it.first }}".addIndent())
+                appendLine("// Please use ${className}.${implMapperMethod.name}CastCastle() extension function".addIndent())
+                appendLine("throw NotImplementedError(\"Missing parameters: ${missingParameters.joinToString { it.first }}\")".addIndent())
+                appendLine("}")
+            }
         }
 
+    private fun generateExtensionMethod(
+        className: String,
+        implMapperMethod: ImplMapperMethod,
+        missingParameters: List<Pair<String, String>>
+    ): String = buildString {
+        val returnTypeName = if (implMapperMethod.to.isCollectionType()) {
+            implMapperMethod.to.fullNameWithGenerics()
+        } else {
+            implMapperMethod.to.fullName()
+        }
+
+        val from = implMapperMethod.from
+        val to = implMapperMethod.to
+
+        // Собираем все параметры
+        val allParameters = buildList {
+            add("${from.name}: ${from.classModel.fullNameWithGenerics()}")
+            addAll(missingParameters.map { "${it.first}: ${it.second}" })
+        }
+
+        val paramList = allParameters.joinToString(", ")
+
+        // Генерируем тело с передачей недостающих параметров
+        val mappingBody = recursiveGenerateMapperCall(
+            sourceVar = from.name,
+            sourceModel = from.classModel,
+            targetModel = to,
+            missingParameters = missingParameters.associate { it.first to it.first },
+            currentMapperMethod = implMapperMethod,
+            isJava = false,
+            onMissingParameter = { name, _ ->
+                // В extension функции все параметры должны быть доступны
+                name
+            })
+
+        appendLine("fun $className.${implMapperMethod.name}CastCastle($paramList): $returnTypeName {")
+        appendLine("return $mappingBody".addIndent())
+        appendLine("}")
+    }
+
+    private val _extensionMethods = mutableListOf<String>()
     private var isClassGenerationCalled = false
     private var counter = 0
-    private fun getReceiver() = "it${counter++}"
+    private fun getReceiver(): String = "it${counter++}"
     private fun recursiveGenerateMapperCall(
         sourceVar: String,
         sourceModel: ClassModel,
         targetModel: ClassModel,
-        visitedTypes: MutableSet<String>,
+        missingParameters: Map<String, String>,
         currentMapperMethod: ImplMapperMethod,
         isJava: Boolean,
+        onMissingParameter: (String, String) -> String?,
+        visitedTypes: MutableSet<String> = mutableSetOf()
     ): String {
         val typeKey = "${sourceModel.fullNameWithGenerics()}->${targetModel.fullNameWithGenerics()}"
         if (typeKey in visitedTypes) {
-            return "TODO(\"Circular mapping detected: ${sourceModel.fullNameWithGenerics()} -> ${targetModel.fullNameWithGenerics()}\")"
+            return "TODO(\"Circular mapping detected: $typeKey\")"
         }
         visitedTypes.add(typeKey)
 
@@ -81,9 +151,11 @@ internal class StringViewGenerator(private val mappers: List<MapperMethod>) {
                 sourceElementType = sourceModel.getCollectionElementType(),
                 targetElementType = targetModel.getCollectionElementType(),
                 targetCollectionFullType = targetModel.fullNameWithGenerics(),
-                visitedTypes = visitedTypes,
+                missingParameters = missingParameters,
                 currentMapperMethod = currentMapperMethod,
-                isJava = isJava
+                isJava = isJava,
+                onMissingParameter = onMissingParameter,
+                visitedTypes = visitedTypes
             )
         }
 
@@ -93,7 +165,14 @@ internal class StringViewGenerator(private val mappers: List<MapperMethod>) {
             "${directMapper.name}($sourceVar)"
         } else {
             generateConstructorCall(
-                sourceVar, sourceModel, targetModel, visitedTypes, currentMapperMethod, isJava
+                sourceVar = sourceVar,
+                sourceModel = sourceModel,
+                targetModel = targetModel,
+                missingParameters = missingParameters,
+                currentMapperMethod = currentMapperMethod,
+                isJava = isJava,
+                onMissingParameter = onMissingParameter,
+                visitedTypes = visitedTypes
             )
         }
     }
@@ -104,7 +183,9 @@ internal class StringViewGenerator(private val mappers: List<MapperMethod>) {
         targetModel: ClassModel,
         visitedTypes: MutableSet<String>,
         currentMapperMethod: ImplMapperMethod,
-        isJava: Boolean
+        isJava: Boolean,
+        missingParameters: Map<String, String>,
+        onMissingParameter: (String, String) -> String?,
     ): String = buildString {
         val targetTypeName = if (targetModel.typeArguments.isNotEmpty()) {
             targetModel.fullNameWithGenerics()
@@ -113,7 +194,7 @@ internal class StringViewGenerator(private val mappers: List<MapperMethod>) {
         }
 
         appendLine("$targetTypeName(")
-        targetModel.parameters.forEach { targetParam ->
+        val params = targetModel.parameters.mapIndexed { index, targetParam ->
             val sourceParam = findMatchingSourceParameter(targetParam, sourceModel)
 
             val paramCall = sourceParam?.let { param ->
@@ -122,30 +203,39 @@ internal class StringViewGenerator(private val mappers: List<MapperMethod>) {
                     sourceFieldAccess = sourceFieldAccess,
                     sourceParam = param,
                     targetParam = targetParam,
-                    visitedTypes = visitedTypes,
+                    missingParameters = missingParameters,
                     currentMapperMethod = currentMapperMethod,
-                    isJava = isJava
+                    isJava = isJava,
+                    onMissingParameter = onMissingParameter,
+                    visitedTypes = visitedTypes.toMutableSet()
                 )
             } ?: run {
-                logger?.error(
-                    "No value with the same name provided for ${targetParam.name}",
-                    currentMapperMethod.baseMethod
-                )
-                "TODO(\"Provide value for ${targetParam.name}\")"
+                // Проверяем, есть ли параметр в missingParameters
+                missingParameters[targetParam.name] ?: run {
+                    // Параметр отсутствует - вызываем callback
+                    onMissingParameter(
+                        targetParam.name, targetParam.classModel.fullNameWithGenerics()
+                    ) ?: "TODO(\"Provide value for ${targetParam.name}\")"
+                }
             }
 
-            appendLine("${if (!isJava) "${targetParam.name} = " else ""}$paramCall,".addIndent())
+            "${if (!isJava) "${targetParam.name} = " else ""}$paramCall${if (index < targetModel.parameters.size - 1) "," else ""}".addIndent()
         }
-        append(")")
+        params.forEach {
+            appendLine(it)
+        }
+        appendLine(")")
     }
 
     private fun generateParameterMapping(
         sourceFieldAccess: String,
         sourceParam: Parameter,
         targetParam: Parameter,
-        visitedTypes: MutableSet<String>,
+        missingParameters: Map<String, String>,
         currentMapperMethod: ImplMapperMethod,
-        isJava: Boolean
+        isJava: Boolean,
+        onMissingParameter: (String, String) -> String?,
+        visitedTypes: MutableSet<String>
     ): String {
         return when {
             sourceParam.classModel.isCollectionType() && targetParam.classModel.isCollectionType() -> {
@@ -154,14 +244,17 @@ internal class StringViewGenerator(private val mappers: List<MapperMethod>) {
                     sourceElementType = sourceParam.classModel.getCollectionElementType(),
                     targetElementType = targetParam.classModel.getCollectionElementType(),
                     targetCollectionFullType = targetParam.classModel.fullNameWithGenerics(),
-                    visitedTypes = visitedTypes,
+                    missingParameters = missingParameters,
                     currentMapperMethod = currentMapperMethod,
-                    isJava = isJava
+                    isJava = isJava,
+                    onMissingParameter = onMissingParameter,
+                    visitedTypes = visitedTypes
                 )
             }
 
-            sourceParam.classModel.fullNameWithGenerics() == targetParam.classModel.fullNameWithGenerics() -> sourceFieldAccess
-
+            sourceParam.classModel.fullNameWithGenerics() == targetParam.classModel.fullNameWithGenerics() -> {
+                sourceFieldAccess
+            }
 
             else -> {
                 recursiveGenerateMapperCall(
@@ -170,7 +263,9 @@ internal class StringViewGenerator(private val mappers: List<MapperMethod>) {
                     targetModel = targetParam.classModel,
                     visitedTypes = visitedTypes.toMutableSet(),
                     currentMapperMethod = currentMapperMethod,
-                    isJava = isJava
+                    isJava = isJava,
+                    missingParameters = missingParameters,
+                    onMissingParameter = onMissingParameter,
                 )
             }
         }
@@ -183,7 +278,9 @@ internal class StringViewGenerator(private val mappers: List<MapperMethod>) {
         targetCollectionFullType: String,
         visitedTypes: MutableSet<String>,
         currentMapperMethod: ImplMapperMethod,
-        isJava: Boolean
+        isJava: Boolean,
+        missingParameters: Map<String, String>,
+        onMissingParameter: (String, String) -> String?,
     ): String {
         if (sourceElementType == null || targetElementType == null) {
             logger?.warn(
@@ -207,7 +304,9 @@ internal class StringViewGenerator(private val mappers: List<MapperMethod>) {
                 targetModel = targetElementType,
                 visitedTypes = visitedTypes.toMutableSet(),
                 currentMapperMethod = currentMapperMethod,
-                isJava = isJava
+                isJava = isJava,
+                missingParameters = missingParameters,
+                onMissingParameter = onMissingParameter,
             )
         }
 
@@ -253,6 +352,10 @@ internal class StringViewGenerator(private val mappers: List<MapperMethod>) {
             baseType.contains("HashSet", ignoreCase = true) -> "hashSetOf<$elementType>()"
             baseType.contains("LinkedHashSet", ignoreCase = true) -> "linkedSetOf<$elementType>()"
             baseType.contains("Set", ignoreCase = true) -> "mutableSetOf<$elementType>()"
+            baseType.contains("MutableMap", ignoreCase = true) -> "mutableMapOf<$elementType>()"
+            baseType.contains("HashMap", ignoreCase = true) -> "hashMapOf<$elementType>()"
+            baseType.contains("LinkedHashMap", ignoreCase = true) -> "linkedMapOf<$elementType>()"
+            baseType.contains("Map", ignoreCase = true) -> "mutableMapOf<$elementType>()"
             else -> "mutableListOf<$elementType>()"
         }
     }
