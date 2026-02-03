@@ -7,5 +7,6 @@ internal data class MapperMethod(
     val sourceParameter: Parameter,
     val targetClass: ClassModel,
     val isAbstract: Boolean,
+    val isMapperAnnotated: Boolean,
     val kspDeclaration: KSFunctionDeclaration
 )

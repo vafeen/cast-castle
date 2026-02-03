@@ -116,9 +116,13 @@ internal class ComponentsResolver(
             targetClass = returnType.toClassModel(),
             name = this.simpleName.asString(),
             isAbstract = this.isAbstract,
+            isMapperAnnotated = this.isMappedAnnotated(),
             kspDeclaration = this
         )
     }
+
+    private fun KSFunctionDeclaration.isMappedAnnotated(): Boolean =
+        this.annotations.any { it.annotationType.resolve().declaration.qualifiedName?.asString() == CastCastleMapper::class.qualifiedName }
 
     private fun KSValueParameter.toParameter(): Parameter = Parameter(
         name = this.name?.asString() ?: "unknown",

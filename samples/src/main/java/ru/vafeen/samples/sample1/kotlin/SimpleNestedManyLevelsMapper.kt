@@ -2,7 +2,7 @@ package ru.vafeen.samples.sample1.kotlin
 
 import ru.vafeen.castcastle.annotations.CastCastleMapper
 
-data class A(val inner1Level1: InnerLevel1A, val inner2Level1: InnerLevel1A)
+data class A(val inner1Level1: InnerLevel1A, val inner2Level1: InnerLevel1A, val int: Int)
 data class B(val inner1Level1: InnerLevel1B, val inner2Level1: InnerLevel1B)
 data class InnerLevel1A(val inner1Level2: InnerLevel2A, val inner2Level2: InnerLevel2A)
 data class InnerLevel1B(val inner1Level2: InnerLevel2B, val inner2Level2: InnerLevel2B)
