@@ -10,4 +10,15 @@ internal data class ClassModel(
     val visibility: ProcessingVisibility,
     val parameters: List<Parameter>,
     val typeArguments: List<ClassModel> = emptyList()
-)
+) {
+    private fun fullName() = "$packageName.$name"
+
+    fun fullNameWithGenerics(): String {
+        return if (typeArguments.isNotEmpty()) {
+            val genericParams = typeArguments.joinToString(", ") { it.fullName() }
+            "${fullName()}<$genericParams>"
+        } else {
+            fullName()
+        }
+    }
+}

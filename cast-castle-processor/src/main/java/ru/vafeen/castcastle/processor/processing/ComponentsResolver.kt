@@ -4,17 +4,19 @@ import com.google.devtools.ksp.getDeclaredFunctions
 import com.google.devtools.ksp.isConstructor
 import com.google.devtools.ksp.isPublic
 import com.google.devtools.ksp.processing.Resolver
-import com.google.devtools.ksp.symbol.ClassKind
 import com.google.devtools.ksp.symbol.KSAnnotated
 import com.google.devtools.ksp.symbol.KSClassDeclaration
+import com.google.devtools.ksp.symbol.KSFile
 import com.google.devtools.ksp.symbol.KSFunctionDeclaration
 import com.google.devtools.ksp.symbol.KSType
 import com.google.devtools.ksp.symbol.KSValueParameter
 import com.google.devtools.ksp.symbol.Origin
 import ru.vafeen.castcastle.annotations.CastCastleMapper
+import ru.vafeen.castcastle.processor.logger
 import ru.vafeen.castcastle.processor.processing.models.ClassModel
 import ru.vafeen.castcastle.processor.processing.models.MapperClass
 import ru.vafeen.castcastle.processor.processing.models.MapperMethod
+import ru.vafeen.castcastle.processor.processing.models.MapperStandaloneFunction
 import ru.vafeen.castcastle.processor.processing.models.Parameter
 
 
@@ -22,20 +24,35 @@ internal class ComponentsResolver(
     private val resolver: Resolver,
 ) {
     private val annotatedInterfaces = mutableListOf<MapperClass>()
+    private val annotatedStandaloneFunctions = mutableListOf<MapperStandaloneFunction>()
 
     fun collectAnnotated() {
         getAllAnnotated().forEach {
-            when {
-                it is KSClassDeclaration
-//                        && it.classKind == ClassKind.INTERFACE
-                    -> {
+            val parent = it.parent
+            when (it) {
+                is KSClassDeclaration -> {
                     annotatedInterfaces.add(it.toMapperClass())
+                }
+
+                is KSFunctionDeclaration if (parent == null || parent is KSFile)
+//                    if it.parent == null
+                    -> {
+                    annotatedStandaloneFunctions.add(it.toMapperStandaloneFunction())
+                    logger?.info("KSFunctionDeclaration: ${it.toMapperStandaloneFunction()}")
                 }
             }
         }
     }
 
+
+    init {
+        collectAnnotated()
+    }
+
     fun getMapperInterfaces(): List<MapperClass> = annotatedInterfaces
+    fun getMapperStandaloneFunctions(): List<MapperStandaloneFunction> =
+        annotatedStandaloneFunctions
+
     fun getAllMappersForThisInterface(mapperClass: MapperClass): List<MapperMethod> {
         // todo сейчас это юзает только внутренние мапперы, а дальше будут еще и другие
         return mapperClass.mappers
@@ -49,7 +66,7 @@ internal class ComponentsResolver(
         name = this.simpleName.asString(),
         packageName = this.packageName.asString(),
         thisClass = this.containingFile,
-        visibility = ProcessingVisibility.getClassAccessModifier(this),
+        visibility = ProcessingVisibility.getDeclarationModifier(this),
         mappers = getAllMappers(),
         isJava = isJavaClass()
     )
@@ -66,7 +83,7 @@ internal class ComponentsResolver(
             name = simpleName.asString(),
             packageName = packageName.asString(),
             thisClass = containingFile,
-            visibility = ProcessingVisibility.getClassAccessModifier(this),
+            visibility = ProcessingVisibility.getDeclarationModifier(this),
             parameters = getParameters(),
             typeArguments = listOf()
         )
@@ -123,6 +140,40 @@ internal class ComponentsResolver(
         )
     }
 
+    private fun KSFunctionDeclaration.toMapperStandaloneFunction(): MapperStandaloneFunction {
+        val returnType = this.returnType?.resolve()
+        val receiver = this.extensionReceiver?.resolve()
+        val parameter = this.parameters.firstOrNull()
+
+        require(returnType != null) {
+            "Standalone function annotated with ${CastCastleMapper::class.qualifiedName} must have only one parameter or receiver and return type".also {
+                logger?.error(it)
+            }
+        }
+        require(receiver != null || parameter != null) {
+            "Standalone function annotated with ${CastCastleMapper::class.qualifiedName} must have only one parameter or receiver and return type".also {
+                logger?.error(it)
+            }
+        }
+
+        return MapperStandaloneFunction(
+            packageName = this.packageName.asString(),
+            name = this.simpleName.asString(),
+            from = receiver?.toReceiverParameter() ?: parameter?.toParameter()
+            ?: error("Receiver and parameter is null"),
+            to = returnType.toClassModel(),
+            declaration = this,
+            isExtension = isExtension(),
+            visibility = ProcessingVisibility.getDeclarationModifier(this)
+        )
+    }
+
+    private fun KSFunctionDeclaration.isExtension(): Boolean =
+        this.extensionReceiver?.resolve() != null
+
+    private fun KSType.toReceiverParameter(): Parameter =
+        Parameter(name = "this", classModel = this.toClassModel(), hasDefault = false)
+
     private fun KSFunctionDeclaration.isMappedAnnotated(): Boolean =
         this.annotations.any { it.annotationType.resolve().declaration.qualifiedName?.asString() == CastCastleMapper::class.qualifiedName }
 
@@ -145,7 +196,7 @@ internal class ComponentsResolver(
             name = classDeclaration.simpleName.asString(),
             packageName = classDeclaration.packageName.asString(),
             thisClass = classDeclaration.containingFile,
-            visibility = ProcessingVisibility.getClassAccessModifier(classDeclaration),
+            visibility = ProcessingVisibility.getDeclarationModifier(classDeclaration),
             parameters = classDeclaration.getParameters(),
             typeArguments = typeArgs()
         )

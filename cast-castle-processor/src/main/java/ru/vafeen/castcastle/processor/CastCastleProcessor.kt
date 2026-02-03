@@ -9,6 +9,7 @@ import ru.vafeen.castcastle.processor.processing.ComponentsResolver
 import ru.vafeen.castcastle.processor.processing.FileWriter
 import ru.vafeen.castcastle.processor.processing.mapper_generators.StringViewGenerator
 import ru.vafeen.castcastle.processor.processing.utils.toImplClassModel
+import ru.vafeen.castcastle.processor.processing.utils.toImplMapperStandaloneFunction
 
 internal var logger: KSPLogger? = null
 internal val libName = "CastCastle"
@@ -28,20 +29,46 @@ internal class CastCastleProcessor private constructor(codeGenerator: CodeGenera
     override fun process(resolver: Resolver): List<KSAnnotated> {
         logger?.info("This is ${this::class.simpleName}")
         val componentsResolver = ComponentsResolver(resolver)
-            .also(ComponentsResolver::collectAnnotated)
         val interfaces = componentsResolver.getMapperInterfaces()
+        val standaloneFunctions = componentsResolver.getMapperStandaloneFunctions()
 
         interfaces.forEach {
-            val implementation = it.toImplClassModel()
-            fileWriter.writeClass(implementation) {
+            val implMapperClass = it.toImplClassModel()
+            fileWriter.writeClass(implMapperClass) {
                 val mappersForThisClass = componentsResolver.getAllMappersForThisInterface(it)
                 val stringViewGenerator = StringViewGenerator(mappersForThisClass)
-                stringViewGenerator.generateImplMapperClass(implementation)
+                stringViewGenerator.generateFuncsForMapperClass(
+                    baseClassType = it.name,
+                    implMapperClass = implMapperClass
+                )
             }
         }
 
+
+        standaloneFunctions
+            .groupBy { it.packageName }
+            .forEach {
+                val packageName = it.key
+                val funcsInThisPackage =
+                    it.value.map { func -> func.toImplMapperStandaloneFunction() }
+                val stringViewGenerator = StringViewGenerator(listOf())
+
+                fileWriter.writeStandaloneFunctions(
+                    packageName = packageName,
+                    implMapperStandaloneFunctions = funcsInThisPackage,
+                    fileName = STANDALONE_FUNCTIONS_FILENAME
+                ) {
+                    stringViewGenerator.generateStandaloneFunctions(
+                        packageName = packageName,
+                        funcsInThisPackage
+                    )
+                }
+            }
         return emptyList()
     }
 
+    companion object {
+        private const val STANDALONE_FUNCTIONS_FILENAME = "StandaloneFunctions"
+    }
 
 }

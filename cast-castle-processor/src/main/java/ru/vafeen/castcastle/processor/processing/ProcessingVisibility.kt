@@ -1,9 +1,8 @@
 package ru.vafeen.castcastle.processor.processing
 
-import com.google.devtools.ksp.symbol.KSClassDeclaration
+import com.google.devtools.ksp.symbol.KSDeclaration
 import com.google.devtools.ksp.symbol.Modifier
 import ru.vafeen.castcastle.annotations.CastCastleMapper
-import ru.vafeen.castcastle.processor.CastCastleProcessor
 import ru.vafeen.castcastle.processor.logger
 
 internal enum class ProcessingVisibility {
@@ -17,29 +16,31 @@ internal enum class ProcessingVisibility {
     abstract fun nameForFile(): String
 
     companion object {
-        fun getClassAccessModifier(
-            ksClassDeclaration: KSClassDeclaration,
+
+
+        fun getDeclarationModifier(
+            ksDeclaration: KSDeclaration
         ): ProcessingVisibility {
             val error =
                 { modifier: Modifier -> "Symbols annotated with ${CastCastleMapper::class.simpleName} cannot be ${modifier.name}" }
             return when {
-                ksClassDeclaration.modifiers.contains(Modifier.PRIVATE) -> INTERNAL
+                ksDeclaration.modifiers.contains(Modifier.PRIVATE) -> INTERNAL
                     .also {
                         logger?.error(
                             error(Modifier.PRIVATE),
-                            ksClassDeclaration
+                            ksDeclaration
                         )
                     }
 
-                ksClassDeclaration.modifiers.contains(Modifier.PROTECTED) -> INTERNAL
+                ksDeclaration.modifiers.contains(Modifier.PROTECTED) -> INTERNAL
                     .also {
                         logger?.error(
                             error(Modifier.PROTECTED),
-                            ksClassDeclaration
+                            ksDeclaration
                         )
                     }
 
-                ksClassDeclaration.modifiers.contains(Modifier.INTERNAL) -> INTERNAL
+                ksDeclaration.modifiers.contains(Modifier.INTERNAL) -> INTERNAL
 //                ksClassDeclaration.modifiers.contains(Modifier.PUBLIC) -> PUBLIC
                 else -> PUBLIC
             }
