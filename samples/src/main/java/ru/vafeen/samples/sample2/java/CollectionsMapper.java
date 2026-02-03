@@ -7,7 +7,7 @@ import ru.vafeen.castcastle.annotations.CastCastleMapper;
 
 
 @CastCastleMapper
-interface CollectionsMapper {
+public interface CollectionsMapper {
     B map(A a);
 
     A map(B b);

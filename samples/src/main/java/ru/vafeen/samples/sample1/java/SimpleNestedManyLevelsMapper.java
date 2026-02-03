@@ -3,7 +3,7 @@ package ru.vafeen.samples.sample1.java;
 import ru.vafeen.castcastle.annotations.CastCastleMapper;
 
 @CastCastleMapper
-interface SimpleNestedManyLevelsMapper {
+public interface SimpleNestedManyLevelsMapper {
     B map(A a);
 
     A map(B b);
