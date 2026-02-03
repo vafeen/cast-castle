@@ -26,7 +26,9 @@ internal class ComponentsResolver(
     fun collectAnnotated() {
         getAllAnnotated().forEach {
             when {
-                it is KSClassDeclaration && it.classKind == ClassKind.INTERFACE -> {
+                it is KSClassDeclaration
+//                        && it.classKind == ClassKind.INTERFACE
+                    -> {
                     annotatedInterfaces.add(it.toMapperClass())
                 }
             }

@@ -1,5 +1,6 @@
 package ru.vafeen.castcastle.processor.processing.mapper_generators
 
+import ru.vafeen.castcastle.processor.libName
 import ru.vafeen.castcastle.processor.logger
 import ru.vafeen.castcastle.processor.processing.models.ClassModel
 import ru.vafeen.castcastle.processor.processing.models.ImplMapperClass
@@ -17,29 +18,26 @@ internal class StringViewGenerator(private val mappers: List<MapperMethod>) {
     fun generateImplMapperClass(implMapperClass: ImplMapperClass): String {
         require(!isClassGenerationCalled) { "${StringViewGenerator::class.simpleName} must be called once for every implementation" }
         isClassGenerationCalled = true
-        _extensionMethods.clear()
 
         return buildString {
             appendLine("package ${implMapperClass.packageName}\n")
             appendLine("//updated: ${LocalDateTime.now()}\n")
             appendLine(copyright())
-            appendLine("${implMapperClass.visibility.nameForFile()} class ${implMapperClass.name} : ${implMapperClass.parentInterfaceName} {")
+
             appendLine(
-                implMapperClass.implMethods.joinToString(separator = "\n\n") { method ->
-                    generateImplMethod(
-                        className = implMapperClass.parentInterfaceName,
+                implMapperClass.implMethods.joinToString(separator = "\n") { method ->
+                    generateExtensionMethodOnly(
+                        implMapperClass = implMapperClass,
                         implMapperMethod = method,
                         isJava = implMapperClass.isJava
                     )
-                }.addIndent()
+                }
             )
-            appendLine("}")
-            _extensionMethods.forEach(::appendLine)
         }
     }
 
-    fun generateImplMethod(
-        className: String,
+    fun generateExtensionMethodOnly(
+        implMapperClass: ImplMapperClass,
         implMapperMethod: ImplMapperMethod,
         isJava: Boolean
     ): String =
@@ -50,82 +48,52 @@ internal class StringViewGenerator(private val mappers: List<MapperMethod>) {
                 implMapperMethod.to.fullName()
             }
 
+            val from = implMapperMethod.from
+            val to = implMapperMethod.to
+
+            // Собираем все необходимые параметры
             val missingParameters = mutableListOf<Pair<String, String>>()
-            val mappingBody = recursiveGenerateMapperCall(
-                sourceVar = implMapperMethod.from.name,
-                sourceModel = implMapperMethod.from.classModel,
-                targetModel = implMapperMethod.to,
+
+            // Сначала анализируем, какие параметры нужны
+            recursiveGenerateMapperCall(
+                sourceVar = from.name,
+                sourceModel = from.classModel,
+                targetModel = to,
                 missingParameters = emptyMap(),
                 currentMapperMethod = implMapperMethod,
                 isJava = isJava,
                 onMissingParameter = { name, type ->
                     missingParameters.add(name to type)
                     null
-                })
-            appendLine(
-                "override fun ${implMapperMethod.name}(" + "${implMapperMethod.from.name}: ${implMapperMethod.from.classModel.fullNameWithGenerics()})" + ": $returnTypeName {"
+                }
             )
-            if (missingParameters.isEmpty()) {
-                // Полный маппинг возможен
 
-                appendLine("return $mappingBody".addIndent())
-                appendLine("}")
-            } else {
-                // Не хватает параметров - генерируем stub
-                val extensionMethod = generateExtensionMethod(
-                    className = className,
-                    implMapperMethod = implMapperMethod,
-                    missingParameters = missingParameters
-                )
-                _extensionMethods.add(extensionMethod)
-                appendLine("// Missing parameters: ${missingParameters.joinToString { it.first }}".addIndent())
-                appendLine("// Please use ${className}.${implMapperMethod.name}CastCastle() extension function".addIndent())
-                appendLine("throw NotImplementedError(\"Missing parameters: ${missingParameters.joinToString { it.first }}\")".addIndent())
-                appendLine("}")
+            // Строим список параметров
+            val allParameters = buildList {
+                add("${from.name}: ${from.classModel.fullNameWithGenerics()}")
+                addAll(missingParameters.map { "${it.first}: ${it.second}" })
             }
+
+            val paramList = allParameters.joinToString(", ")
+
+            // Генерируем тело маппера с учетом всех параметров
+            val mappingBody = recursiveGenerateMapperCall(
+                sourceVar = from.name,
+                sourceModel = from.classModel,
+                targetModel = to,
+                missingParameters = missingParameters.associate { it.first to it.first },
+                currentMapperMethod = implMapperMethod,
+                isJava = isJava,
+                onMissingParameter = { name, _ ->
+                    // В extension функции все параметры должны быть доступны
+                    name
+                })
+
+            appendLine("${implMapperClass.visibility.nameForFile()} fun ${implMapperClass.parentInterfaceName}.${implMapperMethod.name}${libName}($paramList): $returnTypeName {")
+            appendLine("return $mappingBody".addIndent())
+            appendLine("}")
         }
 
-    private fun generateExtensionMethod(
-        className: String,
-        implMapperMethod: ImplMapperMethod,
-        missingParameters: List<Pair<String, String>>
-    ): String = buildString {
-        val returnTypeName = if (implMapperMethod.to.isCollectionType()) {
-            implMapperMethod.to.fullNameWithGenerics()
-        } else {
-            implMapperMethod.to.fullName()
-        }
-
-        val from = implMapperMethod.from
-        val to = implMapperMethod.to
-
-        // Собираем все параметры
-        val allParameters = buildList {
-            add("${from.name}: ${from.classModel.fullNameWithGenerics()}")
-            addAll(missingParameters.map { "${it.first}: ${it.second}" })
-        }
-
-        val paramList = allParameters.joinToString(", ")
-
-        // Генерируем тело с передачей недостающих параметров
-        val mappingBody = recursiveGenerateMapperCall(
-            sourceVar = from.name,
-            sourceModel = from.classModel,
-            targetModel = to,
-            missingParameters = missingParameters.associate { it.first to it.first },
-            currentMapperMethod = implMapperMethod,
-            isJava = false,
-            onMissingParameter = { name, _ ->
-                // В extension функции все параметры должны быть доступны
-                name
-            })
-
-        appendLine("fun $className.${implMapperMethod.name}CastCastle($paramList): $returnTypeName {")
-        appendLine("return $mappingBody".addIndent())
-        appendLine("}")
-    }
-
-    private val _extensionMethods = mutableListOf<String>()
     private var isClassGenerationCalled = false
     private var counter = 0
     private fun getReceiver(): String = "it${counter++}"
@@ -194,7 +162,7 @@ internal class StringViewGenerator(private val mappers: List<MapperMethod>) {
         }
 
         appendLine("$targetTypeName(")
-        val params = targetModel.parameters.mapIndexed { index, targetParam ->
+        val params = targetModel.parameters.map { targetParam ->
             val sourceParam = findMatchingSourceParameter(targetParam, sourceModel)
 
             val paramCall = sourceParam?.let { param ->
@@ -219,12 +187,10 @@ internal class StringViewGenerator(private val mappers: List<MapperMethod>) {
                 }
             }
 
-            "${if (!isJava) "${targetParam.name} = " else ""}$paramCall${if (index < targetModel.parameters.size - 1) "," else ""}".addIndent()
+            "${if (!isJava) "${targetParam.name} = " else ""}$paramCall".addIndent()
         }
-        params.forEach {
-            appendLine(it)
-        }
-        appendLine(")")
+        appendLine(params.joinToString(separator = ",\n"))
+        append(")")
     }
 
     private fun generateParameterMapping(

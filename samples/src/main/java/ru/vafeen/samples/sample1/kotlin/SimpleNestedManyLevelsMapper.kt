@@ -17,8 +17,10 @@ data class InnerLevel5B(val first: Int, val second: String)
 
 @CastCastleMapper
 interface SimpleNestedManyLevelsMapper {
-    fun map(a: A): B
-    fun map(b: B): A
+    @CastCastleMapper
+    fun map(a: A): B = mapCastCastle(a)
+    @CastCastleMapper
+    fun map(b: B): A = mapCastCastle(b, 1)
 //    fun mapLevel1(inner1Level1: InnerLevel1A): InnerLevel1B
 //    fun mapLevel1(inner1Level1: InnerLevel1B): InnerLevel1A
 //    fun mapLevel2(innerLevel2A: InnerLevel2A): InnerLevel2B
