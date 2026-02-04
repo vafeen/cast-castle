@@ -38,7 +38,13 @@ internal class ComponentsResolver(
 //                    if it.parent == null
                     -> {
                     annotatedStandaloneFunctions.add(it.toMapperStandaloneFunction())
-                    logger?.info("KSFunctionDeclaration: ${it.toMapperStandaloneFunction()}")
+                }
+
+                is KSFunctionDeclaration if (parent is KSClassDeclaration && !parent.isMappedAnnotated()) -> {
+                    logger?.error(
+                        "Parent of annotated func must be annotated with @${CastCastleMapper::class.simpleName} too",
+                        it
+                    )
                 }
             }
         }
@@ -62,14 +68,24 @@ internal class ComponentsResolver(
         .getSymbolsWithAnnotation(CastCastleMapper::class.qualifiedName.toString())
         .toList()
 
-    private fun KSClassDeclaration.toMapperClass(): MapperClass = MapperClass(
-        name = this.simpleName.asString(),
-        packageName = this.packageName.asString(),
-        thisClass = this.containingFile,
-        visibility = ProcessingVisibility.getDeclarationModifier(this),
-        mappers = getAllMappers(),
-        isJava = isJavaClass()
-    )
+    private fun KSClassDeclaration.toMapperClass(): MapperClass {
+
+        val name = if (this.isCompanionObject) {
+            val outerClass = this.parent as KSClassDeclaration
+            "${outerClass.simpleName.asString()}.${this.simpleName.asString()}"
+        } else {
+            this.simpleName.asString()
+        }
+
+        return MapperClass(
+            name = name,
+            packageName = this.packageName.asString(),
+            thisClass = this.containingFile,
+            visibility = ProcessingVisibility.getDeclarationModifier(this),
+            mappers = getAllMappers(),
+            isJava = isJavaClass()
+        )
+    }
 
     private fun KSClassDeclaration.getAllMappers(): List<MapperMethod> {
         return this.getDeclaredFunctions()
@@ -175,6 +191,9 @@ internal class ComponentsResolver(
         Parameter(name = "this", classModel = this.toClassModel(), hasDefault = false)
 
     private fun KSFunctionDeclaration.isMappedAnnotated(): Boolean =
+        this.annotations.any { it.annotationType.resolve().declaration.qualifiedName?.asString() == CastCastleMapper::class.qualifiedName }
+
+    private fun KSClassDeclaration.isMappedAnnotated(): Boolean =
         this.annotations.any { it.annotationType.resolve().declaration.qualifiedName?.asString() == CastCastleMapper::class.qualifiedName }
 
     private fun KSValueParameter.toParameter(): Parameter = Parameter(

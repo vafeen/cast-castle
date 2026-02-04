@@ -11,6 +11,7 @@ import ru.vafeen.castcastle.processor.processing.models.ImplMapperStandaloneFunc
 import ru.vafeen.castcastle.processor.processing.models.MapperMethod
 import ru.vafeen.castcastle.processor.processing.models.Parameter
 import ru.vafeen.castcastle.processor.processing.utils.copyright
+import ru.vafeen.castcastle.processor.processing.utils.fullNameWithGenerics
 import ru.vafeen.castcastle.processor.processing.utils.getCollectionElementType
 import ru.vafeen.castcastle.processor.processing.utils.isCollectionType
 import java.time.LocalDateTime
