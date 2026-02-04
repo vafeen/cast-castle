@@ -38,11 +38,10 @@ internal class ComponentsResolver(
 //                    if it.parent == null
                     -> {
                     annotatedStandaloneFunctions.add(it.toMapperStandaloneFunction())
-                    logger.info("KSFunctionDeclaration: ${it.toMapperStandaloneFunction()}")
                 }
 
                 is KSFunctionDeclaration if (parent is KSClassDeclaration && !parent.isMappedAnnotated()) -> {
-                    logger.error(
+                    logger?.error(
                         "Parent of annotated func must be annotated with @${CastCastleMapper::class.simpleName} too",
                         it
                     )

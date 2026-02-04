@@ -12,7 +12,7 @@ import ru.vafeen.castcastle.processor.processing.utils.fullName
 import ru.vafeen.castcastle.processor.processing.utils.toImplClassModel
 import ru.vafeen.castcastle.processor.processing.utils.toImplMapperStandaloneFunction
 
-internal lateinit var logger: KSPLogger
+internal var logger: KSPLogger? = null
 internal val libName = "CastCastle"
 
 internal class CastCastleProcessor private constructor(codeGenerator: CodeGenerator) :
