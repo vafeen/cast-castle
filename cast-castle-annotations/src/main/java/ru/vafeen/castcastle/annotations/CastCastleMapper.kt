@@ -1,5 +1,5 @@
 package ru.vafeen.castcastle.annotations
 
 @Target(AnnotationTarget.CLASS, AnnotationTarget.FUNCTION)
-@Retention(AnnotationRetention.SOURCE)
+@Retention(AnnotationRetention.BINARY)
 annotation class CastCastleMapper

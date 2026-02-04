@@ -8,10 +8,11 @@ import com.google.devtools.ksp.symbol.KSAnnotated
 import ru.vafeen.castcastle.processor.processing.ComponentsResolver
 import ru.vafeen.castcastle.processor.processing.FileWriter
 import ru.vafeen.castcastle.processor.processing.mapper_generators.StringViewGenerator
+import ru.vafeen.castcastle.processor.processing.utils.fullName
 import ru.vafeen.castcastle.processor.processing.utils.toImplClassModel
 import ru.vafeen.castcastle.processor.processing.utils.toImplMapperStandaloneFunction
 
-internal var logger: KSPLogger? = null
+internal lateinit var logger: KSPLogger
 internal val libName = "CastCastle"
 
 internal class CastCastleProcessor private constructor(codeGenerator: CodeGenerator) :
@@ -38,7 +39,7 @@ internal class CastCastleProcessor private constructor(codeGenerator: CodeGenera
                 val mappersForThisClass = componentsResolver.getAllMappersForThisInterface(it)
                 val stringViewGenerator = StringViewGenerator(mappersForThisClass)
                 stringViewGenerator.generateFuncsForMapperClass(
-                    baseClassType = it.name,
+                    baseClassType = it.fullName(),
                     implMapperClass = implMapperClass
                 )
             }
