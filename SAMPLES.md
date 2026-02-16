@@ -140,7 +140,7 @@ public fun ru.vafeen.samples.sample1.kotlin.SimpleNestedThreeLevelsMapper.mapCas
 Source code:
 
 ```java
-// Файл: ./A.java
+// File: ./A.java
 public class A {
     private final InnerLevel1A inner1Level1;
     private final InnerLevel1A inner2Level1;
@@ -165,7 +165,7 @@ public class A {
     }
 }
 
-// Файл: ./B.java
+// File: ./B.java
 public class B {
     private final InnerLevel1B inner1Level1;
     private final InnerLevel1B inner2Level1;
@@ -184,7 +184,7 @@ public class B {
     }
 }
 
-// Файл: ./InnerLevel1B.java
+// File: ./InnerLevel1B.java
 public class InnerLevel1B {
     private final InnerLevel2B inner1Level2;
     private final InnerLevel2B inner2Level2;
@@ -204,7 +204,7 @@ public class InnerLevel1B {
 }
 
 
-// Файл: ./InnerLevel3B.java
+// File: ./InnerLevel3B.java
 public class InnerLevel3B {
     private final int first;
     private final String second;
@@ -224,7 +224,7 @@ public class InnerLevel3B {
 }
 
 
-// Файл: ./InnerLevel1A.java
+// File: ./InnerLevel1A.java
 public class InnerLevel1A {
     private final InnerLevel2A inner1Level2;
     private final InnerLevel2A inner2Level2;
@@ -243,7 +243,7 @@ public class InnerLevel1A {
     }
 }
 
-// Файл: ./InnerLevel2A.java
+// File: ./InnerLevel2A.java
 public class InnerLevel2A {
     private final InnerLevel3A inner1Level3;
     private final InnerLevel3A inner2Level3;
@@ -263,7 +263,7 @@ public class InnerLevel2A {
 }
 
 
-// Файл: ./InnerLevel2B.java
+// File: ./InnerLevel2B.java
 public class InnerLevel2B {
     private final InnerLevel3B inner1Level3;
     private final InnerLevel3B inner2Level3;
@@ -283,7 +283,7 @@ public class InnerLevel2B {
 }
 
 
-// Файл: ./InnerLevel3A.java
+// File: ./InnerLevel3A.java
 public class InnerLevel3A {
     private final int first;
     private final String second;
@@ -302,7 +302,7 @@ public class InnerLevel3A {
     }
 }
 
-// Файл: ./SimpleNestedManyLevelsMapper.java
+// File: ./SimpleNestedManyLevelsMapper.java
 import static ru.vafeen.samples.sample1.java.SimpleNestedManyLevelsMapperCastCastleKt.mapACastCastle;
 import static ru.vafeen.samples.sample1.java.SimpleNestedManyLevelsMapperCastCastleKt.mapBCastCastle;
 
@@ -529,7 +529,7 @@ internal fun ru.vafeen.samples.sample2.kotlin.CollectionsMapper.mapLevel1BCastCa
 Source code:
 
 ```java
-// Файл: ./A.java
+// File: ./A.java
 public class A {
     private final List<InnerLevel1A> inner1Level1;
     private final InnerLevel1A inner2Level1;
@@ -548,7 +548,7 @@ public class A {
     }
 }
 
-// Файл: ./B.java
+// File: ./B.java
 public class B {
     private final List<InnerLevel1B> inner1Level1;
     private final InnerLevel1B inner2Level1;
@@ -567,7 +567,7 @@ public class B {
     }
 }
 
-// Файл: ./InnerLevel1A.java
+// File: ./InnerLevel1A.java
 public class InnerLevel1A {
     private final List<InnerLevel2A> inner1Level2;
     private final InnerLevel2A inner2Level2;
@@ -586,7 +586,7 @@ public class InnerLevel1A {
     }
 }
 
-// Файл: ./InnerLevel1B.java
+// File: ./InnerLevel1B.java
 public class InnerLevel1B {
     private final List<InnerLevel2B> inner1Level2;
     private final InnerLevel2B inner2Level2;
@@ -606,7 +606,7 @@ public class InnerLevel1B {
 }
 
 
-// Файл: ./InnerLevel2A.java
+// File: ./InnerLevel2A.java
 class InnerLevel2A {
     private final String x;
     private final int y;
@@ -625,7 +625,7 @@ class InnerLevel2A {
     }
 }
 
-// Файл: ./InnerLevel2B.java
+// File: ./InnerLevel2B.java
 class InnerLevel2B {
     private final int x;
     private final String y;
@@ -644,7 +644,7 @@ class InnerLevel2B {
     }
 }
 
-// Файл: ./CollectionsMapper.java
+// File: ./CollectionsMapper.java
 import static ru.vafeen.samples.sample2.java.CollectionsMapperCastCastleKt.mapACastCastle;
 import static ru.vafeen.samples.sample2.java.CollectionsMapperCastCastleKt.mapBCastCastle;
 import static ru.vafeen.samples.sample2.java.CollectionsMapperCastCastleKt.mapLevel1ACastCastle;
@@ -681,35 +681,6 @@ public interface CollectionsMapper {
         return mapLevel1BCastCastle(this, inner1Level1); // used generated function
     }
 
-    //    @CastCastleMapper
-    //    default List<InnerLevel1B> mapLevel1A(List<InnerLevel1A> inner1Level1) {
-    //        return mapLevel1AListCastCastle(inner1Level1);
-    //    }
-    //
-    //    @CastCastleMapper
-    //    default List<InnerLevel1A> mapLevel1B(List<InnerLevel1B> inner1Level1) {
-    //        return mapLevel1BListCastCastle(inner1Level1);
-    //    }
-    //
-    //    @CastCastleMapper
-    //    default InnerLevel2B mapLevel2A(InnerLevel2A innerLevel2A) {
-    //        return mapLevel2ACastCastle(innerLevel2A);
-    //    }
-    //
-    //    @CastCastleMapper
-    //    default InnerLevel2A mapLevel2B(InnerLevel2B innerLevel2A) {
-    //        return mapLevel2BCastCastle(innerLevel2A);
-    //    }
-    //
-    //    @CastCastleMapper
-    //    default List<InnerLevel2B> mapLevel2A(List<InnerLevel2A> innerLevel2A) {
-    //        return mapLevel2AListCastCastle(innerLevel2A);
-    //    }
-    //
-    //    @CastCastleMapper
-    //    default List<InnerLevel2A> mapLevel2B(List<InnerLevel2B> innerLevel2A) {
-    //        return mapLevel2BListCastCastle(innerLevel2A);
-    //    }
 }
 
 
@@ -826,7 +797,7 @@ public fun ru.vafeen.samples.sample3.kotlin.AdditionalFieldsMapper.mapBCastCastl
 Source code:
 
 ```java
-// Файл: ./A.java
+// File: ./A.java
 public class A {
     private int x;
     private int y;
@@ -853,7 +824,7 @@ public class A {
     }
 }
 
-// Файл ./B.java
+// File ./B.java
 public class B {
     private int x;
     private int z;
@@ -880,7 +851,7 @@ public class B {
     }
 }
 
-// Файл ./AdditionalFieldsMapper.java
+// File ./AdditionalFieldsMapper.java
 import static ru.vafeen.samples.sample3.java.AdditionalFieldsMapperCastCastleKt.mapCastCastle;
 import static ru.vafeen.samples.sample3.java.AdditionalFieldsMapperCastCastleKt.mapCastCastle;
 
