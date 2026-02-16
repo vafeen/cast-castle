@@ -1,21 +1,19 @@
 package ru.vafeen.samples.sample2.java;
 
-import java.util.List;
+class InnerLevel2A {
+    private final String x;
+    private final int y;
 
-public class InnerLevel2A {
-    private final List<InnerLevel3A> inner1Level3;
-    private final InnerLevel3A inner2Level3;
-
-    public InnerLevel2A(List<InnerLevel3A> inner1Level3, InnerLevel3A inner2Level3) {
-        this.inner1Level3 = inner1Level3;
-        this.inner2Level3 = inner2Level3;
+    public InnerLevel2A(String x, int y) {
+        this.x = x;
+        this.y = y;
     }
 
-    public List<InnerLevel3A> getInner1Level3() {
-        return inner1Level3;
+    public String getX() {
+        return x;
     }
 
-    public InnerLevel3A getInner2Level3() {
-        return inner2Level3;
+    public int getY() {
+        return y;
     }
 }
