@@ -184,46 +184,6 @@ public class B {
     }
 }
 
-// File: ./InnerLevel1B.java
-public class InnerLevel1B {
-    private final InnerLevel2B inner1Level2;
-    private final InnerLevel2B inner2Level2;
-
-    public InnerLevel1B(InnerLevel2B inner1Level2, InnerLevel2B inner2Level2) {
-        this.inner1Level2 = inner1Level2;
-        this.inner2Level2 = inner2Level2;
-    }
-
-    public InnerLevel2B getInner1Level2() {
-        return inner1Level2;
-    }
-
-    public InnerLevel2B getInner2Level2() {
-        return inner2Level2;
-    }
-}
-
-
-// File: ./InnerLevel3B.java
-public class InnerLevel3B {
-    private final int first;
-    private final String second;
-
-    public InnerLevel3B(int first, String second) {
-        this.first = first;
-        this.second = second;
-    }
-
-    public int getFirst() {
-        return first;
-    }
-
-    public String getSecond() {
-        return second;
-    }
-}
-
-
 // File: ./InnerLevel1A.java
 public class InnerLevel1A {
     private final InnerLevel2A inner1Level2;
@@ -239,6 +199,25 @@ public class InnerLevel1A {
     }
 
     public InnerLevel2A getInner2Level2() {
+        return inner2Level2;
+    }
+}
+
+// File: ./InnerLevel1B.java
+public class InnerLevel1B {
+    private final InnerLevel2B inner1Level2;
+    private final InnerLevel2B inner2Level2;
+
+    public InnerLevel1B(InnerLevel2B inner1Level2, InnerLevel2B inner2Level2) {
+        this.inner1Level2 = inner1Level2;
+        this.inner2Level2 = inner2Level2;
+    }
+
+    public InnerLevel2B getInner1Level2() {
+        return inner1Level2;
+    }
+
+    public InnerLevel2B getInner2Level2() {
         return inner2Level2;
     }
 }
@@ -262,7 +241,6 @@ public class InnerLevel2A {
     }
 }
 
-
 // File: ./InnerLevel2B.java
 public class InnerLevel2B {
     private final InnerLevel3B inner1Level3;
@@ -282,6 +260,24 @@ public class InnerLevel2B {
     }
 }
 
+// File: ./InnerLevel3B.java
+public class InnerLevel3B {
+    private final int first;
+    private final String second;
+
+    public InnerLevel3B(int first, String second) {
+        this.first = first;
+        this.second = second;
+    }
+
+    public int getFirst() {
+        return first;
+    }
+
+    public String getSecond() {
+        return second;
+    }
+}
 
 // File: ./InnerLevel3A.java
 public class InnerLevel3A {
@@ -682,8 +678,6 @@ public interface CollectionsMapper {
     }
 
 }
-
-
 ```
 
 Generated code:
