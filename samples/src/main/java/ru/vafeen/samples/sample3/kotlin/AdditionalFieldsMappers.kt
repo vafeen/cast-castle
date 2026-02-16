@@ -15,8 +15,8 @@ fun B.standaloneMapper2(): A = standaloneMapper2CastCastle(1)
 @CastCastleMapper
 class AdditionalFieldsMapper {
     @CastCastleMapper
-    fun map(a: A): B = mapCastCastle(a, 1)
+    fun mapA(a: A): B = mapACastCastle(a, 1)
 
     @CastCastleMapper
-    fun map(b: B): A = mapCastCastle(b, 1)
+    fun mapB(b: B): A = mapBCastCastle(b, 1)
 }
