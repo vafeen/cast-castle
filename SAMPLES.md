@@ -22,10 +22,10 @@ data class InnerLevel3B(val first: Int, val second: String)
 @CastCastleMapper
 interface SimpleNestedThreeLevelsMapper {
     @CastCastleMapper
-    fun map(a: A): B = mapCastCastle(a)
+    fun map(a: A): B = mapCastCastle(a) // used generated function
 
     @CastCastleMapper
-    fun map(b: B): A = mapCastCastle(b, 1)
+    fun map(b: B): A = mapCastCastle(b, 1) // used generated function
 }
 ```
 
@@ -311,12 +311,12 @@ public class SimpleNestedManyLevelsMapper {
 
     @CastCastleMapper
     public B mapA(A a) {
-        return mapACastCastle(this, a);
+        return mapACastCastle(this, a); // used generated function
     }
 
     @CastCastleMapper
     public A mapB(B b) {
-        return mapBCastCastle(this, b, 1);
+        return mapBCastCastle(this, b, 1); // used generated function
     }
 }
 ```
@@ -444,19 +444,21 @@ data class InnerLevel2B(val x: Int, val y: String)
 @CastCastleMapper
 internal interface CollectionsMapper {
     @CastCastleMapper
-    fun mapA(a: A): B = mapACastCastle(a)
+    fun mapA(a: A): B = mapACastCastle(a) // used generated function
 
     @CastCastleMapper
-    fun mapB(b: B): A = mapBCastCastle(b)
+    fun mapB(b: B): A = mapBCastCastle(b) // used generated function
 
     fun string(string: String): Int = string.toInt()
     fun int(int: Int): String = "$int"
 
     @CastCastleMapper
-    fun mapLevel1A(inner1Level1: InnerLevel1A): InnerLevel1B = mapLevel1ACastCastle(inner1Level1)
+    fun mapLevel1A(inner1Level1: InnerLevel1A): InnerLevel1B =
+        mapLevel1ACastCastle(inner1Level1) // used generated function
 
     @CastCastleMapper
-    fun mapLevel1B(inner1Level1: InnerLevel1B): InnerLevel1A = mapLevel1BCastCastle(inner1Level1)
+    fun mapLevel1B(inner1Level1: InnerLevel1B): InnerLevel1A =
+        mapLevel1BCastCastle(inner1Level1) // used generated function
 }
 ```
 
@@ -653,12 +655,12 @@ public interface CollectionsMapper {
 
     @CastCastleMapper
     default B mapA(A a) {
-        return mapACastCastle(this, a);
+        return mapACastCastle(this, a); // used generated function
     }
 
     @CastCastleMapper
     default A mapB(B b) {
-        return mapBCastCastle(this, b);
+        return mapBCastCastle(this, b); // used generated function
     }
 
     default int string(String string) {
@@ -671,12 +673,12 @@ public interface CollectionsMapper {
 
     @CastCastleMapper
     default InnerLevel1B mapLevel1A(InnerLevel1A inner1Level1) {
-        return mapLevel1ACastCastle(this, inner1Level1);
+        return mapLevel1ACastCastle(this, inner1Level1); // used generated function
     }
 
     @CastCastleMapper
     default InnerLevel1A mapLevel1B(InnerLevel1B inner1Level1) {
-        return mapLevel1BCastCastle(this, inner1Level1);
+        return mapLevel1BCastCastle(this, inner1Level1); // used generated function
     }
 
     //    @CastCastleMapper
@@ -788,10 +790,10 @@ data class B(val x: Int, val z: Int)
 @CastCastleMapper
 class AdditionalFieldsMapper {
     @CastCastleMapper
-    fun mapA(a: A): B = mapACastCastle(a, 1)
+    fun mapA(a: A): B = mapACastCastle(a, 1) // used generated function
 
     @CastCastleMapper
-    fun mapB(b: B): A = mapBCastCastle(b, 1)
+    fun mapB(b: B): A = mapBCastCastle(b, 1) // used generated function
 }
 ```
 
@@ -887,12 +889,12 @@ public class AdditionalFieldsMapper {
 
     @CastCastleMapper
     public A map(B b) {
-        return mapCastCastle(this, b, 1);
+        return mapCastCastle(this, b, 1); // used generated function
     }
 
     @CastCastleMapper
     public B map(A a) {
-        return mapCastCastle(this, a, 1);
+        return mapCastCastle(this, a, 1); // used generated function
     }
 }
 ```
@@ -934,7 +936,8 @@ class CompanionObjectFuncs {
     @CastCastleMapper
     companion object {
         @CastCastleMapper
-        fun companionObjectFuncsMapper(a: A): B = companionObjectFuncsMapperCastCastle(a, 1)
+        fun companionObjectFuncsMapper(a: A): B =
+            companionObjectFuncsMapperCastCastle(a, 1) // used generated function
     }
 }
 ```
@@ -962,10 +965,10 @@ data class A(val x: Int, val y: Int)
 data class B(val x: Int, val z: Int)
 
 @CastCastleMapper
-fun standaloneMapper1(a: A): B = standaloneMapper1CastCastle(a, 1)
+fun standaloneMapper1(a: A): B = standaloneMapper1CastCastle(a, 1) // used generated function
 
 @CastCastleMapper
-fun B.standaloneMapper2(): A = standaloneMapper2CastCastle(1)
+fun B.standaloneMapper2(): A = standaloneMapper2CastCastle(1) // used generated function
 ```
 
 Generated code:
