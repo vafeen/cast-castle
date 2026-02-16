@@ -6,8 +6,10 @@
 
 **Cast Castle** is a lightweight Kotlin library for generating mapping code between `data class`
 using **KSP (Kotlin Symbol Processing)**.  
-It automatically creates mapper implementations or separate mapping functions based on the
-`@CastCastleMapper` annotation.
+It automatically creates separate extension mapping functions based on the
+`@CastCastleMapper` annotation for classes or standalone functions.
+
+**When you add, remove, or rename fields in your data classes, you no longer need to manually update all the mappers — the library regenerates them automatically, *similar to how Dagger2 regenerates all injectors when the code changes without the need for manual writing.***
 
 ## Implementation
 
