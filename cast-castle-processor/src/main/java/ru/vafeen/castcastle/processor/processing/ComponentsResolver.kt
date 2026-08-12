@@ -6,9 +6,10 @@ import com.google.devtools.ksp.isPublic
 import com.google.devtools.ksp.processing.Resolver
 import com.google.devtools.ksp.symbol.KSAnnotated
 import com.google.devtools.ksp.symbol.KSClassDeclaration
+import com.google.devtools.ksp.symbol.KSClassifierReference
 import com.google.devtools.ksp.symbol.KSFile
 import com.google.devtools.ksp.symbol.KSFunctionDeclaration
-import com.google.devtools.ksp.symbol.KSType
+import com.google.devtools.ksp.symbol.KSTypeReference
 import com.google.devtools.ksp.symbol.KSValueParameter
 import com.google.devtools.ksp.symbol.Origin
 import ru.vafeen.castcastle.annotations.CastCastleMapper
@@ -143,7 +144,7 @@ internal class ComponentsResolver(
     }
 
     private fun KSFunctionDeclaration.toMapperMethod(): MapperMethod {
-        val returnType = this.returnType?.resolve()
+        val returnType = this.returnType
             ?: throw IllegalStateException("Mapper method must have return type")
 
         return MapperMethod(
@@ -157,8 +158,8 @@ internal class ComponentsResolver(
     }
 
     private fun KSFunctionDeclaration.toMapperStandaloneFunction(): MapperStandaloneFunction {
-        val returnType = this.returnType?.resolve()
-        val receiver = this.extensionReceiver?.resolve()
+        val returnType = this.returnType
+        val receiver = this.extensionReceiver
         val parameter = this.parameters.firstOrNull()
 
         require(returnType != null) {
@@ -185,9 +186,9 @@ internal class ComponentsResolver(
     }
 
     private fun KSFunctionDeclaration.isExtension(): Boolean =
-        this.extensionReceiver?.resolve() != null
+        this.extensionReceiver != null
 
-    private fun KSType.toReceiverParameter(): Parameter =
+    private fun KSTypeReference.toReceiverParameter(): Parameter =
         Parameter(name = "this", classModel = this.toClassModel(), hasDefault = false)
 
     private fun KSFunctionDeclaration.isMappedAnnotated(): Boolean =
@@ -198,17 +199,23 @@ internal class ComponentsResolver(
 
     private fun KSValueParameter.toParameter(): Parameter = Parameter(
         name = this.name?.asString() ?: "unknown",
-        classModel = this.type.resolve().toClassModel(),
+        classModel = this.type.toClassModel(),
         hasDefault = this.hasDefault,
 //            isVararg = this.isVararg,
     )
 
-    private fun KSType.typeArgs() = this.arguments.mapNotNull { arg ->
-        (arg.type?.resolve()?.declaration as? KSClassDeclaration)?.toClassModel()
+    private fun KSTypeReference.typeArgs(): List<ClassModel> {
+        val elementArgs = (this.element as? KSClassifierReference)?.typeArguments.orEmpty()
+        if (elementArgs.any { it.type != null }) {
+            return elementArgs.mapNotNull { it.type?.toClassModel() }
+        }
+        return resolve().arguments.mapNotNull { arg ->
+            arg.type?.toClassModel()
+        }
     }
 
-    private fun KSType.toClassModel(): ClassModel {
-        val classDeclaration = this.declaration as? KSClassDeclaration
+    private fun KSTypeReference.toClassModel(): ClassModel {
+        val classDeclaration = this.resolve().declaration as? KSClassDeclaration
             ?: throw IllegalArgumentException("KSType must represent a class declaration")
 
         return ClassModel(

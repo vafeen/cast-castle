@@ -7,7 +7,7 @@ private fun ClassModel.fullName() = "$packageName.$name"
 
 internal fun ClassModel.fullNameWithGenerics(): String {
     return if (typeArguments.isNotEmpty()) {
-        val genericParams = typeArguments.joinToString(", ") { it.fullName() }
+        val genericParams = typeArguments.joinToString(", ") { it.fullNameWithGenerics() }
         "${fullName()}<$genericParams>"
     } else {
         fullName()

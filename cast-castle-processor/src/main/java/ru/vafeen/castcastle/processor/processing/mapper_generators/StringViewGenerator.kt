@@ -373,7 +373,10 @@ internal class StringViewGenerator(private val mappers: List<MapperMethod>) {
         val elementMapper =
             findDirectMapper(sourceElementType, targetElementType, currentMapperMethodName)
         val receiver = getReceiver()
-        val collectionInitializer = getCollectionInitializer(targetCollectionFullType)
+        val collectionInitializer = getCollectionInitializer(
+            fullType = targetCollectionFullType,
+            elementType = targetElementType.fullNameWithGenerics()
+        )
 
         val addContent = when {
             elementMapper != null -> "${elementMapper.name}($receiver)"
@@ -421,8 +424,7 @@ internal class StringViewGenerator(private val mappers: List<MapperMethod>) {
         }
     }
 
-    private fun getCollectionInitializer(fullType: String): String {
-        val elementType = extractElementTypeFromCollection(fullType)
+    private fun getCollectionInitializer(fullType: String, elementType: String): String {
         val baseType = fullType.substringBefore("<")
 
         return when {
@@ -433,10 +435,18 @@ internal class StringViewGenerator(private val mappers: List<MapperMethod>) {
             baseType.contains("HashSet", ignoreCase = true) -> "hashSetOf<$elementType>()"
             baseType.contains("LinkedHashSet", ignoreCase = true) -> "linkedSetOf<$elementType>()"
             baseType.contains("Set", ignoreCase = true) -> "mutableSetOf<$elementType>()"
-            baseType.contains("MutableMap", ignoreCase = true) -> "mutableMapOf<$elementType>()"
-            baseType.contains("HashMap", ignoreCase = true) -> "hashMapOf<$elementType>()"
-            baseType.contains("LinkedHashMap", ignoreCase = true) -> "linkedMapOf<$elementType>()"
-            baseType.contains("Map", ignoreCase = true) -> "mutableMapOf<$elementType>()"
+            baseType.contains("MutableMap", ignoreCase = true) ->
+                "mutableMapOf<${extractElementTypeFromCollection(fullType)}>()"
+
+            baseType.contains("HashMap", ignoreCase = true) ->
+                "hashMapOf<${extractElementTypeFromCollection(fullType)}>()"
+
+            baseType.contains("LinkedHashMap", ignoreCase = true) ->
+                "linkedMapOf<${extractElementTypeFromCollection(fullType)}>()"
+
+            baseType.contains("Map", ignoreCase = true) ->
+                "mutableMapOf<${extractElementTypeFromCollection(fullType)}>()"
+
             else -> "mutableListOf<$elementType>()"
         }
     }
