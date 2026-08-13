@@ -3,6 +3,7 @@ package ru.vafeen.castcastle.processor.processing
 import com.google.devtools.ksp.processing.CodeGenerator
 import com.google.devtools.ksp.processing.Dependencies
 import com.google.devtools.ksp.symbol.KSFile
+import com.squareup.kotlinpoet.FileSpec
 import ru.vafeen.castcastle.processor.processing.models.ImplMapperClass
 import ru.vafeen.castcastle.processor.processing.models.ImplMapperStandaloneFunction
 
@@ -10,42 +11,37 @@ import ru.vafeen.castcastle.processor.processing.models.ImplMapperStandaloneFunc
 internal class FileWriter(private val codeGenerator: CodeGenerator) {
     fun writeClass(
         implMapperClass: ImplMapperClass,
-        classView: () -> String
+        fileSpec: FileSpec
     ) {
         val parent = implMapperClass.parent
-        codeGenerator.createNewFile(
+        writeFile(
+            fileSpec = fileSpec,
             dependencies = Dependencies(
                 aggregating = false,
                 sources = if (parent != null) arrayOf(parent) else arrayOf()
-            ),
-            packageName = implMapperClass.packageName,
-            fileName = implMapperClass.name
+            )
         )
-            .writer()
-            .use { out ->
-                out.write(classView())
-            }
     }
 
     fun writeStandaloneFunctions(
-        packageName: String,
-        fileName: String,
         implMapperStandaloneFunctions: List<ImplMapperStandaloneFunction>,
-        funsView: () -> String
+        fileSpec: FileSpec
     ) {
-        codeGenerator.createNewFile(
+        writeFile(
+            fileSpec = fileSpec,
             dependencies = Dependencies(
                 aggregating = false,
                 sources = implMapperStandaloneFunctions.map { it.declaration.containingFile as KSFile }
                     .toTypedArray()
-            ),
-            packageName = packageName,
-            fileName = fileName
+            )
         )
-            .writer()
-            .use { out ->
-                out.write(funsView())
-            }
     }
 
+    private fun writeFile(fileSpec: FileSpec, dependencies: Dependencies) {
+        codeGenerator.createNewFile(dependencies, fileSpec.packageName, fileSpec.name)
+            .writer()
+            .use { out ->
+                fileSpec.writeTo(out)
+            }
+    }
 }

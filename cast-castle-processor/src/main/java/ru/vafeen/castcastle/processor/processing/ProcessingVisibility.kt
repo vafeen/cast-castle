@@ -2,6 +2,7 @@ package ru.vafeen.castcastle.processor.processing
 
 import com.google.devtools.ksp.symbol.KSDeclaration
 import com.google.devtools.ksp.symbol.Modifier
+import com.squareup.kotlinpoet.KModifier
 import ru.vafeen.castcastle.annotations.CastCastleMapper
 import ru.vafeen.castcastle.processor.logger
 
@@ -14,6 +15,11 @@ internal enum class ProcessingVisibility {
     };
 
     abstract fun nameForFile(): String
+
+    fun toKModifier(): KModifier = when (this) {
+        PUBLIC -> KModifier.PUBLIC
+        INTERNAL -> KModifier.INTERNAL
+    }
 
     companion object {
 

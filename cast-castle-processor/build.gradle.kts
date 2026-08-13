@@ -19,6 +19,7 @@ kotlin {
 dependencies {
     implementation(project(":cast-castle-annotations"))
     implementation(libs.symbol.processing.api)
+    implementation(libs.kotlinpoet)
 }
 
 mavenPublishing {
