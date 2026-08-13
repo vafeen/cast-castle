@@ -7,8 +7,8 @@ import com.google.devtools.ksp.processing.SymbolProcessor
 import com.google.devtools.ksp.symbol.KSAnnotated
 import ru.vafeen.castcastle.processor.processing.ComponentsResolver
 import ru.vafeen.castcastle.processor.processing.FileWriter
-import ru.vafeen.castcastle.processor.processing.mapper_generators.StringViewGenerator
-import ru.vafeen.castcastle.processor.processing.utils.fullName
+import ru.vafeen.castcastle.processor.processing.mapper_generators.KotlinPoetSpecGenerator
+import ru.vafeen.castcastle.processor.processing.utils.toClassName
 import ru.vafeen.castcastle.processor.processing.utils.toImplClassModel
 import ru.vafeen.castcastle.processor.processing.utils.toImplMapperStandaloneFunction
 
@@ -35,14 +35,16 @@ internal class CastCastleProcessor private constructor(codeGenerator: CodeGenera
 
         interfaces.forEach {
             val implMapperClass = it.toImplClassModel()
-            fileWriter.writeClass(implMapperClass) {
-                val mappersForThisClass = componentsResolver.getAllMappersForThisInterface(it)
-                val stringViewGenerator = StringViewGenerator(mappersForThisClass)
-                stringViewGenerator.generateFuncsForMapperClass(
-                    baseClassType = it.fullName(),
-                    implMapperClass = implMapperClass
-                )
-            }
+            val mappersForThisClass = componentsResolver.getAllMappersForThisInterface(it)
+            val kotlinPoetSpecGenerator = KotlinPoetSpecGenerator(mappersForThisClass)
+            val fileSpec = kotlinPoetSpecGenerator.generateFuncsForMapperClass(
+                baseClassType = it.toClassName(),
+                implMapperClass = implMapperClass
+            )
+            fileWriter.writeClass(
+                implMapperClass = implMapperClass,
+                fileSpec = fileSpec
+            )
         }
 
 
@@ -52,24 +54,18 @@ internal class CastCastleProcessor private constructor(codeGenerator: CodeGenera
                 val packageName = it.key
                 val funcsInThisPackage =
                     it.value.map { func -> func.toImplMapperStandaloneFunction() }
-                val stringViewGenerator = StringViewGenerator(listOf())
+                val kotlinPoetSpecGenerator = KotlinPoetSpecGenerator(listOf())
+                val fileSpec = kotlinPoetSpecGenerator.generateStandaloneFunctions(
+                    packageName = packageName,
+                    implMapperStandaloneFunctions = funcsInThisPackage
+                )
 
                 fileWriter.writeStandaloneFunctions(
-                    packageName = packageName,
                     implMapperStandaloneFunctions = funcsInThisPackage,
-                    fileName = STANDALONE_FUNCTIONS_FILENAME
-                ) {
-                    stringViewGenerator.generateStandaloneFunctions(
-                        packageName = packageName,
-                        funcsInThisPackage
-                    )
-                }
+                    fileSpec = fileSpec
+                )
             }
         return emptyList()
-    }
-
-    companion object {
-        private const val STANDALONE_FUNCTIONS_FILENAME = "StandaloneFunctions"
     }
 
 }
